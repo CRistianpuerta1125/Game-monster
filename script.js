@@ -18,10 +18,21 @@ window.addEventListener('load', function(){
             this.speedY = 0;
             this.dx = 0;
             this.dy = 0;
-            this.speedModifier = 20;
-
+            this.speedModifier = 5;
+            this.spriteWidth = 255;
+            this.spriteHeight = 255;
+            this.width = this.spriteWidth;
+            this.height = this.spriteHeight;
+            this.spriteX;
+            this.spriteY;
+            this.frameX = 0;
+            this.frameY = 0;
+            this.image = document.getElementById('bull');
         }
         draw(context){
+            context.drawImage(this.image, this.frameX * this.spriteWidth, this.frameY * this.spriteHeight,
+                this.spriteWidth, this.spriteHeight, 
+                this.spriteX, this.spriteY, this.width, this.height);
             context.beginPath();
             context.arc(this.collisionX, this.collisionY, this.collisionRadius, 0, Math.PI * 2);
             context.save();
@@ -37,6 +48,9 @@ window.addEventListener('load', function(){
         update(){
             this.dx = this.game.mouse.x - this.collisionX;
             this.dy = this.game.mouse.y - this.collisionY;
+            // sprite animation
+            const angle = Math.atan2(this.game.mouse.y - this.collisionY, this.game.mouse.x - this.collisionX);
+            
             const distance = Math.hypot(this.dy, this.dx);
             if(distance > this.speedModifier){
                 this.speedX = this.dx/distance || 0;
@@ -48,6 +62,8 @@ window.addEventListener('load', function(){
             
             this.collisionX += this.speedX * this.speedModifier;
             this.collisionY += this.speedY * this.speedModifier;
+            this.spriteX = this.collisionX - this.width * 0.5;
+            this.spriteY = this.collisionY - this.height * 0.5 - 100;
             //collisions wirh obstacles
             this.game.obstacles.forEach(obstacle => {
                 //[(distance < sumOfRadii), distance, sumOfRadii, dx, dy]
