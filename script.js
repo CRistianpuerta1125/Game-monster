@@ -4,10 +4,10 @@ window.addEventListener('load', function(){
     canvas.width = 1280;
     canvas.height = 720;
 
-    ctx.fillStyle = 'white';
+    ctx.fillStyle = 'transparent';
     ctx.lineWidth = 3;
-    ctx.strokeStyle = 'black';
-    ctx.font = '40px Helvetica'
+    ctx.strokeStyle = 'transparent';
+    ctx.font = '40px Bangers'
     ctx.textAlign = 'center';
 
     class Player {
@@ -30,6 +30,12 @@ window.addEventListener('load', function(){
             this.frameX = 0;
             this.frameY = 0;
             this.image = document.getElementById('bull');
+        }
+        restart(){
+            this.collisionX = this.game.width * 0.5;
+            this.collisionY = this.game.height * 0.5;
+            this.spriteX = this.collisionX - this.width * 0.5;
+            this.spriteY = this.collisionY - this.height * 0.5 - 100;
         }
         draw(context){
             context.drawImage(this.image, this.frameX * this.spriteWidth, this.frameY * this.spriteHeight,
@@ -156,7 +162,7 @@ window.addEventListener('load', function(){
             this.spriteX;
             this.spriteY;
             this.hatchTimer = 0;
-            this.hatchInterval = 3000;
+            this.hatchInterval = 10000;
             this.markedForDeletion = false;
         }
         draw(context) {
@@ -177,7 +183,7 @@ window.addEventListener('load', function(){
             this.spriteX = this.collisionX - this.width * 0.5;
             this.spriteY = this.collisionY - this.height * 0.5 - 30;
             //collisions
-            let collisionObject = [this.game.player, ...this.game.obstacles, ...this.game.enemies];
+            let collisionObject = [this.game.player, ...this.game.obstacles, ...this.game.enemies, ...this.game.hatchlings];
             collisionObject.forEach(object => {
                 let [collision, distance, sumOfRadii, dx, dy] = this.game.checkCollision(this, object);
                 if (collision){
@@ -188,7 +194,7 @@ window.addEventListener('load', function(){
                 }
             });
             // hatchings
-            if(this.hatchTimer > this.hatchInterval){
+            if(this.hatchTimer > this.hatchInterval || this.collisionY < this.game.topMargin){
                 this.game.hatchlings.push(new Larva(this.game, this.collisionX, this.collisionY));
                 this.markedForDeletion = true;
                 this.game.removeGameObjects();
@@ -230,13 +236,13 @@ window.addEventListener('load', function(){
         update(){
             this.collisionY -= this.speedY;
             this.spriteX = this.collisionX - this.width * 0.5;
-            this.spriteY = this.collisionY - this.height * 0.5 - 50;
+            this.spriteY = this.collisionY - this.height * 0.5 - 40;
             // move to safety
             if(this.collisionY < this.game.topMargin){
                 this.markedForDeletion = true;
                 this.game.removeGameObjects();
-                this.game.score++;
-                for(let i = 0; i < 30; i++){
+                if (!this.game.gameOver)this.game.score++;
+                for(let i = 0; i < 3; i++){
                     this.game.particles.push(new Firefly(this.game, this.collisionX, this.collisionY, 'yellow'));
                 }
                 
@@ -254,11 +260,11 @@ window.addEventListener('load', function(){
             });
             // collison with enemies
             this.game.enemies.forEach(enemy =>{
-                if(this.game.checkCollision(this, enemy)[0]){
+                if(this.game.checkCollision(this, enemy)[0] && !this.game.gameOver){
                     this.markedForDeletion = true;
                     this.game.removeGameObjects();
                     this.game.lostHatchlings++;
-                    for(let i = 0; i < 30; i++){
+                    for(let i = 0; i < 5; i++){
                         this.game.particles.push(new Spark(this.game, this.collisionX, this.collisionY, 'yellow'));
                     }
                 }
@@ -271,7 +277,7 @@ window.addEventListener('load', function(){
             this.collisionRadius = 30;
 
             this.speedX = Math.random() * 3 + 0.5;
-            this.image = document.getElementById('toad');
+            this.image = document.getElementById('toads');
             this.spriteWidth = 140;
             this.spriteHeight = 260;
             this.width = this.spriteWidth;
@@ -280,10 +286,11 @@ window.addEventListener('load', function(){
             this.collisionY = this.game.topMargin + (Math.random() * (this.game.height - this.game.topMargin));
             this.spriteX;
             this.spriteY;
-
+            this.frameX = 0;
+            this.frameY = Math.floor(Math.random() * 4);
         }
         draw(context) {
-            context.drawImage(this.image, this.spriteX, this.spriteY);
+            context.drawImage(this.image, this.frameX * this.spriteWidth, this.frameY * this.spriteHeight, this.spriteWidth, this.spriteHeight, this.spriteX, this.spriteY, this.width, this.height);
             if (this.game.debug){
                 context.beginPath();
                 context.arc(this.collisionX, this.collisionY, this.collisionRadius, 0, Math.PI * 2);
@@ -298,9 +305,10 @@ window.addEventListener('load', function(){
             this.spriteX = this.collisionX - this.width * 0.5;
             this.spriteY = this.collisionY - this.height + 40;
             this.collisionX -= this.speedX;
-            if(this.spriteX + this.width < 0){
+            if(this.spriteX + this.width < 0 && !this.game.gameOver){
                 this.collisionX = this.game.width + this.width + Math.random() * this.game.width * 0.5;
                 this.collisionY = this.game.topMargin + (Math.random() * (this.game.height - this.game.topMargin));
+                this.frameY = Math.floor(Math.random() * 4);
             }
             let collisionObject = [this.game.player, ...this.game.obstacles];
             collisionObject.forEach(object => {
@@ -377,7 +385,7 @@ window.addEventListener('load', function(){
             this.eggTimer = 0;
             this.eggInterval = 1000;
             this.numberOfObstacles = 10;
-            this.maxEggs = 20;
+            this.maxEggs = 5;
             this.obstacles = [];
             this.eggs = [];
             this.enemies = [];
@@ -385,6 +393,8 @@ window.addEventListener('load', function(){
             this.particles = [];
             this.gameObjects = [];
             this.score = 0;
+            this.winningScore = 30;
+            this.gameOver = false;
             this.lostHatchlings = 0;
             this.mouse = {
                 x: this.width * 0.5,
@@ -412,7 +422,7 @@ window.addEventListener('load', function(){
             });
             window.addEventListener('keydown', e => {
                 if(e.key == 'd') this.debug = !this.debug;
-                console.log(this.debug);
+                else if(e.key == 'r') this.restart();
             });
         } 
         render(context, deltaTime) {
@@ -433,7 +443,7 @@ window.addEventListener('load', function(){
             this.timer += deltaTime;
 
             // add eggs periodically
-            if(this.eggTimer > this.eggInterval && this.eggs.length < this.maxEggs){
+            if(this.eggTimer > this.eggInterval && this.eggs.length < this.maxEggs && !this.gameOver){
                 this.addEgg();
                 this.eggTimer = 0;
             } else {
@@ -447,6 +457,34 @@ window.addEventListener('load', function(){
                 context.fillText('Lost: ' + this.lostHatchlings, 25, 100);
             }
             context.restore();
+            
+            // win / lose messages
+            if (this.score >= this.winningScore){
+                this.gameOver = true;
+                context.save();
+                context.fillStyle = 'rgba(0, 0, 0, 0.5)';
+                context.fillRect(0, 0, this.width, this.height);
+                context.fillStyle = 'white';
+                context.textAlign = 'center';
+                context.shadowOffsetX = 4;
+                context.shadowOffsetY = 4;
+                context.shadowColor = 'black';
+                let message1;
+                let message2;
+                if(this.lostHatchlings <= 5){
+                    message1 = "Bullseye !!!"
+                    message2 = "you bullied the bullies";
+                } else {
+                    message1 = "Bullocks!"
+                    message2 = "You lost " + this.lostHatchlings + " hatchlings, don't be a pushover!";
+                }
+                context.font = '130px Bangers';
+                context.fillText(message1, this.width * 0.5, this.height * 0.5 - 20);
+                context.font = '40px Bangers';
+                context.fillText(message2, this.width * 0.5, this.height * 0.5 + 30);
+                context.fillText("Final score" + this.score + ". Press 'R' to butt heads again!", this.width * 0.5, this.height * 0.5 + 80);
+                context.restore();
+            }
         }
         checkCollision(a, b){
             const dx = a.collisionX - b.collisionX;
@@ -467,8 +505,25 @@ window.addEventListener('load', function(){
             this.particles = this.particles.filter(object => !object.markedForDeletion);
 
         }
+        restart(){
+            this.player.restart();
+            this.obstacles = [];
+            this.eggs = [];
+            this.enemies = [];
+            this.hatchlings = [];
+            this.particles = [];
+            this.mouse = {
+                x: this.width * 0.5,
+                y: this.height * 0.5,
+                pressed: false
+            }
+            this.score = 0;
+            this.lostHatchlings = 0;
+            this.gameOver = false;
+            this.init();
+        }
         init(){
-            for(let i = 0; i < 3; i++){
+            for(let i = 0; i < 5; i++){
                 this.addEnemy();
             }
            let attempts = 0;
